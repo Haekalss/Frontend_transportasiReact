@@ -1,47 +1,50 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getAllJadwal, getAllRutes, getAllKendaraan } from "../services/api"; // Sesuaikan path jika perlu
+
 import { Calendar } from "lucide-react";
 import JadwalDashboardStats from "../components/organisms/JadwalDashboardStats";
 import JadwalDashboardTable from "../components/organisms/JadwalDashboardTable";
 
 export default function JadwalDashboard() {
   const [jadwals, setJadwals] = useState([]);
-  const [rutes, setRutes] = useState([]); // Tambah state rute
-  const [ruteInput, setRuteInput] = useState(""); // State input select
-  const [filteredJadwals, setFilteredJadwals] = useState([]); // State hasil filter
+  const [rutes, setRutes] = useState([]);
+  const [ruteInput, setRuteInput] = useState("");
+  const [filteredJadwals, setFilteredJadwals] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [jadwalRes, ruteRes, kendaraanRes] = await Promise.all([
-          axios.get("http://localhost:8088/api/jadwals"),
-          axios.get("http://localhost:8088/api/rutes"),
-          axios.get("http://localhost:8088/api/kendaraans"),
+        const [jadwalData, ruteData, kendaraanData] = await Promise.all([
+          getAllJadwal(),
+          getAllRutes(),
+          getAllKendaraan(),
         ]);
 
-        setRutes(ruteRes.data); // Simpan data rute
+        setRutes(ruteData);
 
         const ruteMap = {};
-        ruteRes.data.forEach(r => {
+        ruteData.forEach(r => {
           ruteMap[r._id] = r.nama_rute;
         });
 
         const kendaraanMap = {};
-        kendaraanRes.data.forEach(k => {
+        kendaraanData.forEach(k => {
           kendaraanMap[k._id] = k.jenis;
         });
 
-        const jadwalGabung = jadwalRes.data.map(j => ({
+        const jadwalGabung = jadwalData.map(j => ({
           ...j,
           nama_rute: ruteMap[j.rute_id] || "-",
           jenis_kendaraan: kendaraanMap[j.kendaraan_id] || "-",
-          kode_rute: j.rute?.kode_rute || "-",      
+          kode_rute: j.rute?.kode_rute || "-",       
           jarak_km: j.rute?.jarak_km || "-",       
         }));
 
         setJadwals(jadwalGabung);
       } catch (err) {
         console.error("Gagal ambil data jadwal:", err);
+        setError("Gagal memuat data. Pastikan Anda sudah login.");
       }
     };
 
@@ -51,7 +54,7 @@ export default function JadwalDashboard() {
   // Handler select rute
   const handleSelectRute = (e) => {
     setRuteInput(e.target.value);
-    setFilteredJadwals([]); // Reset hasil filter saat ganti pilihan
+    setFilteredJadwals([]);
   };
 
   // Handler tombol cari
@@ -70,6 +73,8 @@ export default function JadwalDashboard() {
         <Calendar size={28} className="text-emerald-600" />
         <h2 className="text-2xl font-bold text-emerald-700">Dashboard Jadwal</h2>
       </div>
+
+      {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
 
       {/* Baris: Stats & Pencarian */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">

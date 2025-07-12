@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getAllKendaraan } from "../services/api"; 
+
 import { BusFront } from "lucide-react";
 import KendaraanDashboardStats from "../components/organisms/KendaraanDashboardStats";
 import KendaraanDashboardTable from "../components/organisms/KendaraanDashboardTable";
 
 export default function KendaraanDashboard() {
   const [kendaraan, setKendaraan] = useState([]);
+  const [error, setError] = useState(null); 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const kendaraanRes = await axios.get("http://localhost:8088/api/kendaraans");
+        const data = await getAllKendaraan();
 
         // Pastikan field kapasitas selalu ada
-        const kendaraanDenganKapasitas = kendaraanRes.data.map(k => ({
+        const kendaraanDenganKapasitas = data.map(k => ({
           ...k,
           kapasitas: k.kapasitas || "Tidak diketahui",
         }));
@@ -21,6 +23,7 @@ export default function KendaraanDashboard() {
         setKendaraan(kendaraanDenganKapasitas);
       } catch (err) {
         console.error("Gagal ambil data:", err);
+        setError("Gagal memuat data. Pastikan Anda sudah login.");
       }
     };
 
@@ -33,6 +36,9 @@ export default function KendaraanDashboard() {
         <BusFront size={28} className="text-green-600" />
         <h2 className="text-2xl font-bold text-green-800">Dashboard Kendaraan</h2>
       </div>
+
+      {/* Tampilkan pesan error jika ada */}
+      {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
 
       <KendaraanDashboardStats kendaraan={kendaraan} />
       <KendaraanDashboardTable kendaraanList={kendaraan} />
