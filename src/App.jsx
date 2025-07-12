@@ -8,12 +8,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import KendaraanCRUD from "./pages/admin/MinKendaraan";
 import RuteCRUD from "./pages/admin/MinRute";
 import JadwalCRUD from "./pages/admin/MinJadwal";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
           <Route path="/" element={<UserDashboard />} />
           <Route path="/rutes" element={<RuteDashboard />} />
           <Route path="/kendaraans" element={<KendaraanDashboard />} />
@@ -23,7 +28,6 @@ function App() {
           <Route path="/admin/Kendaraans" element={<KendaraanCRUD />} />
           <Route path="/admin/Rutes" element={<RuteCRUD />} />
           <Route path="/admin/Jadwals" element={<JadwalCRUD />} />
-
         </Routes>
       </div>
     </Router>
