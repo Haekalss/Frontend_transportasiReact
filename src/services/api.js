@@ -5,21 +5,25 @@ const apiClient = axios.create({
   baseURL: 'http://localhost:8088/api',
 });
 
-// --- INTERCEPTOR UNTUK REQUEST  ---
+// --- INTERCEPTOR UNTUK REQUEST ---
 apiClient.interceptors.request.use(
   (config) => {
-    // DEBUG: Tampilkan pesan setiap kali interceptor berjalan
     console.log(`[Interceptor] Running for request to: ${config.url}`);
 
-    const token = localStorage.getItem('token');
+    // Cek apakah request BUKAN untuk login atau register
+    const isAuthRoute = config.url.endsWith('/login') || config.url.endsWith('/register');
 
-    if (token) {
-      // DEBUG: Tampilkan pesan jika token ditemukan
-      console.log('[Interceptor] Token DITEMUKAN. Menambahkan ke header.');
-      config.headers['Authorization'] = `Bearer ${token}`;
+    // Hanya tambahkan token jika BUKAN rute otentikasi
+    if (!isAuthRoute) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('[Interceptor] Token DITEMUKAN. Menambahkan ke header.');
+        config.headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn('[Interceptor] PERINGATAN: Token TIDAK ditemukan untuk rute yang dilindungi.');
+      }
     } else {
-      // DEBUG: Tampilkan pesan jika token TIDAK ditemukan
-      console.warn('[Interceptor] PERINGATAN: Token TIDAK ditemukan di localStorage untuk request ini.');
+      console.log('[Interceptor] Rute otentikasi, token tidak ditambahkan.');
     }
     
     return config;
@@ -31,13 +35,12 @@ apiClient.interceptors.request.use(
 
 // --- INTERCEPTOR UNTUK RESPONSE ---
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    if (error.response) {
-      if (error.response.status === 400 || error.response.status === 401 || error.response.status === 403) {
-        
+    if (error.response && (error.response.status === 400 || error.response.status === 401 || error.response.status === 403)) {
+      const isAuthRoute = error.config.url.endsWith('/login') || error.config.url.endsWith('/register');
+      // Hanya jalankan logout paksa jika error BUKAN dari halaman login/register itu sendiri
+      if (!isAuthRoute) {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
 
@@ -53,7 +56,6 @@ apiClient.interceptors.response.use(
         }
       }
     }
-    
     return Promise.reject(error);
   }
 );

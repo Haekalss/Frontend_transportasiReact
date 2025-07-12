@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import { getAllJadwal, getAllRutes, createJadwal, updateJadwal, deleteJadwal } from "../../services/api";
+
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
 
 export default function JadwalCRUD() {
@@ -8,27 +9,18 @@ export default function JadwalCRUD() {
   const [notif, setNotif] = useState(null);
   const [editId, setEditId] = useState(null);
 
-  const [newData, setNewData] = useState({
-    tanggal: "",
-    waktu_berangkat: "",
-    estimasi_tiba: "",
-    kode_rute: ""
-  });
-  const [editData, setEditData] = useState({
-    tanggal: "",
-    waktu_berangkat: "",
-    estimasi_tiba: "",
-    kode_rute: ""
-  });
+  const [newData, setNewData] = useState({ tanggal: "", waktu_berangkat: "", estimasi_tiba: "", kode_rute: "" });
+  const [editData, setEditData] = useState({ tanggal: "", waktu_berangkat: "", estimasi_tiba: "", kode_rute: "" });
 
   const fetchAll = useCallback(async () => {
     try {
-      const [jadwalRes, ruteRes] = await Promise.all([
-        axios.get("http://localhost:8088/api/jadwals"),
-        axios.get("http://localhost:8088/api/rutes"),
+      // GUNAKAN FUNGSI DARI api.js
+      const [jadwalData, ruteData] = await Promise.all([
+        getAllJadwal(),
+        getAllRutes(),
       ]);
-      setJadwals(jadwalRes.data);
-      setRutes(ruteRes.data);
+      setJadwals(jadwalData);
+      setRutes(ruteData);
     } catch {
       showNotif("Gagal memuat data", false);
     }
@@ -48,34 +40,31 @@ export default function JadwalCRUD() {
 
   const handleCreate = async () => {
     const { tanggal, waktu_berangkat, estimasi_tiba, kode_rute } = newData;
-    if (
-      !tanggal?.trim() ||
-      !waktu_berangkat?.trim() ||
-      !estimasi_tiba?.trim() ||
-      !kode_rute?.trim()
-    ) {
+    if (!tanggal?.trim() || !waktu_berangkat?.trim() || !estimasi_tiba?.trim() || !kode_rute?.trim()) {
       showNotif("Semua field wajib diisi", false);
       return;
     }
     try {
-      await axios.post("http://localhost:8088/api/jadwals", newData);
+      // GUNAKAN FUNGSI DARI api.js
+      await createJadwal(newData);
       fetchAll();
       setNewData({ tanggal: "", waktu_berangkat: "", estimasi_tiba: "", kode_rute: "" });
       showNotif("Data berhasil ditambahkan");
     } catch (err) {
-      showNotif(err.response?.data?.message || err.response?.data?.error || "Gagal menambahkan data", false);
-      console.error("Create error:", err.response?.data || err.message);
+      showNotif(err.response?.data?.error || "Gagal menambahkan data", false);
     }
   };
 
   const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8088/api/jadwals/${id}`);
-      fetchAll();
-      showNotif("Data berhasil dihapus");
-    } catch (err) {
-      showNotif(err.response?.data?.message || "Gagal menghapus data", false);
-      console.error("Delete error:", err.response?.data || err.message);
+    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+        try {
+            // GUNAKAN FUNGSI DARI api.js
+            await deleteJadwal(id);
+            fetchAll();
+            showNotif("Data berhasil dihapus");
+        } catch (err) {
+            showNotif(err.response?.data?.error || "Gagal menghapus data", false);
+        }
     }
   };
 
@@ -85,28 +74,24 @@ export default function JadwalCRUD() {
       tanggal: j.tanggal,
       waktu_berangkat: j.waktu_berangkat,
       estimasi_tiba: j.estimasi_tiba,
-      kode_rute: j.kode_rute || j.rute?.kode_rute || rutes.find(r => r._id === (j.rute_id || j.rute?._id))?.kode_rute || ""
+      kode_rute: j.rute?.kode_rute || "",
     });
   };
 
   const handleUpdate = async () => {
     const { tanggal, waktu_berangkat, estimasi_tiba, kode_rute } = editData;
-    if (
-      !tanggal?.trim() ||
-      !waktu_berangkat?.trim() ||
-      !estimasi_tiba?.trim() ||
-      !kode_rute?.trim()
-    ) {
+    if (!tanggal?.trim() || !waktu_berangkat?.trim() || !estimasi_tiba?.trim() || !kode_rute?.trim()) {
       showNotif("Semua field wajib diisi", false);
       return;
     }
     try {
-      await axios.put(`http://localhost:8088/api/jadwals/${editId}`, editData);
+      // GUNAKAN FUNGSI DARI api.js
+      await updateJadwal(editId, editData);
       fetchAll();
       setEditId(null);
       showNotif("Data berhasil diupdate");
-    } catch {
-      showNotif("Gagal mengupdate data", false);
+    } catch (err) {
+      showNotif(err.response?.data?.error || "Gagal mengupdate data", false);
     }
   };
 
@@ -125,48 +110,19 @@ export default function JadwalCRUD() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 mb-1" htmlFor="tanggal">Tanggal</label>
-            <input
-              id="tanggal"
-              type="date"
-              name="tanggal"
-              value={newData.tanggal}
-              onChange={handleInput}
-              className="border px-3 py-2 rounded"
-            />
+            <input id="tanggal" type="date" name="tanggal" value={newData.tanggal} onChange={handleInput} className="border px-3 py-2 rounded" />
           </div>
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 mb-1" htmlFor="waktu_berangkat">Waktu Berangkat</label>
-            <input
-              id="waktu_berangkat"
-              type="time"
-              name="waktu_berangkat"
-              value={newData.waktu_berangkat}
-              onChange={handleInput}
-              className="border px-3 py-2 rounded"
-              placeholder="hh:mm"
-            />
+            <input id="waktu_berangkat" type="time" name="waktu_berangkat" value={newData.waktu_berangkat} onChange={handleInput} className="border px-3 py-2 rounded" placeholder="hh:mm" />
           </div>
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 mb-1" htmlFor="estimasi_tiba">Estimasi Tiba</label>
-            <input
-              id="estimasi_tiba"
-              type="time"
-              name="estimasi_tiba"
-              value={newData.estimasi_tiba}
-              onChange={handleInput}
-              className="border px-3 py-2 rounded"
-              placeholder="hh:mm"
-            />
+            <input id="estimasi_tiba" type="time" name="estimasi_tiba" value={newData.estimasi_tiba} onChange={handleInput} className="border px-3 py-2 rounded" placeholder="hh:mm" />
           </div>
           <div className="flex flex-col">
             <label className="text-xs text-gray-500 mb-1" htmlFor="kode_rute">Rute</label>
-            <select
-              id="kode_rute"
-              name="kode_rute"
-              value={newData.kode_rute}
-              onChange={handleInput}
-              className="border px-3 py-2 rounded"
-            >
+            <select id="kode_rute" name="kode_rute" value={newData.kode_rute} onChange={handleInput} className="border px-3 py-2 rounded">
               <option value="">Pilih Rute</option>
               {rutes.map((r) => <option key={r._id} value={r.kode_rute}>{r.nama_rute}</option>)}
             </select>
@@ -195,63 +151,18 @@ export default function JadwalCRUD() {
               <tr key={j.id} className="border-t hover:bg-gray-50">
                 {editId === j.id ? (
                   <>
+                    <td className="px-5 py-2"><input type="date" name="tanggal" value={editData.tanggal} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                    <td className="px-5 py-2"><input type="time" name="waktu_berangkat" value={editData.waktu_berangkat} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                    <td className="px-5 py-2"><input type="time" name="estimasi_tiba" value={editData.estimasi_tiba} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
                     <td className="px-5 py-2">
-                      <input
-                        type="date"
-                        name="tanggal"
-                        value={editData.tanggal}
-                        onChange={handleEditChange}
-                        className="border px-2 py-1 rounded w-full"
-                      />
-                    </td>
-                    <td className="px-5 py-2">
-                      <input
-                        type="time"
-                        name="waktu_berangkat"
-                        value={editData.waktu_berangkat}
-                        onChange={handleEditChange}
-                        className="border px-2 py-1 rounded w-full"
-                      />
-                    </td>
-                    <td className="px-5 py-2">
-                      <input
-                        type="time"
-                        name="estimasi_tiba"
-                        value={editData.estimasi_tiba}
-                        onChange={handleEditChange}
-                        className="border px-2 py-1 rounded w-full"
-                      />
-                    </td>
-                    <td className="px-5 py-2">
-                      <select
-                        name="kode_rute"
-                        value={editData.kode_rute}
-                        onChange={handleEditChange}
-                        className="border px-2 py-1 rounded w-full"
-                      >
+                      <select name="kode_rute" value={editData.kode_rute} onChange={handleEditChange} className="border px-2 py-1 rounded w-full">
                         <option value="">Pilih Rute</option>
-                        {rutes.map((r) => (
-                          <option key={r._id} value={r.kode_rute}>
-                            {r.nama_rute}
-                          </option>
-                        ))}
+                        {rutes.map((r) => (<option key={r._id} value={r.kode_rute}>{r.nama_rute}</option>))}
                       </select>
                     </td>
                     <td className="px-5 py-2 text-center">
-                      <button
-                        onClick={handleUpdate}
-                        className="text-green-600 hover:underline mr-3"
-                        title="Simpan"
-                      >
-                        <Save size={16} />
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="text-gray-500 hover:underline"
-                        title="Batal"
-                      >
-                        <X size={16} />
-                      </button>
+                      <button onClick={handleUpdate} className="text-green-600 hover:underline mr-3" title="Simpan"><Save size={16} /></button>
+                      <button onClick={handleCancelEdit} className="text-gray-500 hover:underline" title="Batal"><X size={16} /></button>
                     </td>
                   </>
                 ) : (
@@ -259,28 +170,10 @@ export default function JadwalCRUD() {
                     <td className="px-5 py-2">{j.tanggal}</td>
                     <td className="px-5 py-2">{j.waktu_berangkat}</td>
                     <td className="px-5 py-2">{j.estimasi_tiba}</td>
-                    <td className="px-5 py-2">
-                      {j.rute?.nama_rute ||
-                        rutes.find(r => r._id === (j.rute_id || j.rute?._id))?.nama_rute ||
-                        rutes.find(r => r.kode_rute === j.kode_rute)?.nama_rute ||
-                        "-"
-                      }
-                    </td>
+                    <td className="px-5 py-2">{j.rute?.nama_rute || "-"}</td>
                     <td className="px-5 py-2 text-center">
-                      <button
-                        onClick={() => handleEdit(j)}
-                        className="text-blue-600 hover:underline mr-3"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(j.id)}
-                        className="text-red-600 hover:underline"
-                        title="Hapus"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <button onClick={() => handleEdit(j)} className="text-blue-600 hover:underline mr-3" title="Edit"><Pencil size={16} /></button>
+                      <button onClick={() => handleDelete(j.id)} className="text-red-600 hover:underline" title="Hapus"><Trash2 size={16} /></button>
                     </td>
                   </>
                 )}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { register } from '../services/api'; // Sesuaikan path jika perlu
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -21,7 +21,8 @@ export default function RegisterPage() {
     }
 
     try {
-      await axios.post('http://localhost:8088/api/register', {
+      // GUNAKAN FUNGSI 'register' DARI api.js
+      await register({
         username,
         password,
         password_confirmation: passwordConfirmation,
@@ -83,11 +84,11 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
-         <p className="text-sm text-center text-gray-600">
+        <p className="text-sm text-center text-gray-600">
           Sudah punya akun?{' '}
-          <a href="/login" className="font-semibold text-blue-600 hover:underline">
+          <Link to="/login" className="font-semibold text-blue-600 hover:underline">
             Login di sini
-          </a>
+          </Link>
         </p>
       </div>
     </div>

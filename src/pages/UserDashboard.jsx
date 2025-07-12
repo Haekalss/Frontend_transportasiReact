@@ -1,11 +1,12 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Home, Map, BusFront, Calendar } from "lucide-react";
+import { Home, Map as MapIcon, BusFront, Calendar } from "lucide-react"; 
 import { useEffect, useState } from "react";
-import axios from "axios";
+
+import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
 
 const menu = [
   { name: "Dashboard", path: "/", icon: <Home size={18} /> },
-  { name: "Rute", path: "/rutes", icon: <Map size={18} /> },
+  { name: "Rute", path: "/rutes", icon: <MapIcon size={18} /> },
   { name: "Kendaraan", path: "/kendaraans", icon: <BusFront size={18} /> },
   { name: "Jadwal", path: "/jadwals", icon: <Calendar size={18} /> },
 ];
@@ -19,27 +20,36 @@ export default function UserLayout() {
   const [jadwalCount, setJadwalCount] = useState(0);
 
   useEffect(() => {
-    // Total Rute
-    axios.get("http://localhost:8088/api/rutes")
-      .then(res => setRuteCount(Array.isArray(res.data) ? res.data.length : 0))
-      .catch(() => setRuteCount(0));
+    const fetchDashboardData = async () => {
+      try {
+        // Gunakan Promise.all dengan fungsi dari api.js
+        const [ruteData, kendaraanData, jadwalData] = await Promise.all([
+          getAllRutes(),
+          getAllKendaraan(),
+          getAllJadwal(),
+        ]);
 
-    // Kendaraan Aktif
-    axios.get("http://localhost:8088/api/kendaraans")
-      .then(res => {
-        const arr = Array.isArray(res.data) ? res.data : [];
-        const aktif = arr.filter(k => (k.status || "").toLowerCase() === "aktif");
+        // Hitung total rute
+        setRuteCount(Array.isArray(ruteData) ? ruteData.length : 0);
+
+        // Hitung kendaraan aktif
+        const arrKendaraan = Array.isArray(kendaraanData) ? kendaraanData : [];
+        const aktif = arrKendaraan.filter(k => (k.status || "").toLowerCase() === "aktif");
         setKendaraanCount(aktif.length);
-      })
-      .catch(() => setKendaraanCount(0));
 
-    // Jadwal Hari Ini (atau terbaru)
-       axios.get("http://localhost:8088/api/jadwals")
-      .then(res => {
-        const arr = Array.isArray(res.data) ? res.data : [];
-        setJadwalCount(arr.length);
-      })
-      .catch(() => setJadwalCount(0));
+        // Hitung total jadwal
+        setJadwalCount(Array.isArray(jadwalData) ? jadwalData.length : 0);
+
+      } catch (error) {
+        console.error("Gagal memuat data dashboard:", error);
+        // Set semua count ke 0 jika ada error
+        setRuteCount(0);
+        setKendaraanCount(0);
+        setJadwalCount(0);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   return (
@@ -52,7 +62,7 @@ export default function UserLayout() {
               key={item.name}
               to={item.path}
               className={`flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-blue-50 transition ${
-                location.pathname.startsWith(item.path) ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700"
+                location.pathname === item.path ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700"
               }`}
             >
               {item.icon} {item.name}
@@ -65,8 +75,9 @@ export default function UserLayout() {
         <header className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-800">{currentPage}</h1>
         </header>
-        {/* Konten tambahan hanya untuk halaman dashboard */}
-        {location.pathname === "/" && (
+        
+        {/* Tampilkan konten dashboard hanya jika di path "/" */}
+        {location.pathname === "/" ? (
           <div>
             <section className="mb-8">
               <div className="bg-blue-100 rounded-xl p-6 flex items-center gap-4">
@@ -79,7 +90,7 @@ export default function UserLayout() {
             </section>
             <section className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow p-5 flex flex-col items-center">
-                <div className="bg-blue-200 rounded-full p-3 mb-2"><Map size={28} className="text-blue-600" /></div>
+                <div className="bg-blue-200 rounded-full p-3 mb-2"><MapIcon size={28} className="text-blue-600" /></div>
                 <div className="text-2xl font-bold text-blue-700">{ruteCount}</div>
                 <div className="text-gray-600">Total Rute</div>
               </div>
@@ -89,10 +100,10 @@ export default function UserLayout() {
                 <div className="text-gray-600">Kendaraan Aktif</div>
               </div>
               <div className="bg-white rounded-xl shadow p-5 flex flex-col items-center">
-  <div className="bg-yellow-200 rounded-full p-3 mb-2"><Calendar size={28} className="text-yellow-600" /></div>
-  <div className="text-2xl font-bold text-yellow-700">{jadwalCount}</div>
-  <div className="text-gray-600">Total Jadwal</div>
-</div>
+                <div className="bg-yellow-200 rounded-full p-3 mb-2"><Calendar size={28} className="text-yellow-600" /></div>
+                <div className="text-2xl font-bold text-yellow-700">{jadwalCount}</div>
+                <div className="text-gray-600">Total Jadwal</div>
+              </div>
             </section>
             <section>
               <h3 className="text-lg font-semibold mb-2 text-gray-800">Info Layanan</h3>
@@ -103,9 +114,10 @@ export default function UserLayout() {
               </ul>
             </section>
           </div>
+        ) : (
+          // Jika bukan di path "/", tampilkan konten dari rute anak
+          <Outlet />
         )}
-        {/* Akhir konten tambahan */}
-        <Outlet />
       </main>
     </div>
   );

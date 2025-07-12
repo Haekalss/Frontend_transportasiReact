@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState, useCallback } from "react";
+import { getAllRutes, createRute, updateRute, deleteRute } from "../../services/api";
 import { Plus, Pencil, Trash2, Save, X, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function RuteCRUD() {
@@ -8,119 +8,90 @@ export default function RuteCRUD() {
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
   const [notif, setNotif] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    fetchRutes();
-  }, [refreshKey]);
-
-  const fetchRutes = async () => {
+  const fetchRutes = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:8088/api/rutes");
-      setRutes(res.data);
+      // Gunakan fungsi dari api.js
+      const data = await getAllRutes();
+      setRutes(data);
     } catch (err) {
       console.error("Gagal ambil data rute:", err);
+      showNotif("Gagal memuat data rute. Pastikan Anda login sebagai admin.", false);
     }
-  };
+  }, []); 
+
+  // Gunakan fetchRutes sebagai dependensi
+  useEffect(() => {
+    fetchRutes();
+  }, [fetchRutes]);
 
   const showNotif = (msg, success = true) => {
     setNotif({ msg, success });
     setTimeout(() => setNotif(null), 3000);
   };
 
-  const triggerRefresh = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
 
   const handleInput = (e) => {
     setNewData({ ...newData, [e.target.name]: e.target.value });
   };
 
-const handleCreate = async () => {
-  if (!newData.kode_rute || !newData.nama_rute || !newData.asal || !newData.tujuan || !newData.jarak_km) {
-    showNotif("Semua field harus diisi", false);
-    return;
-  }
+  const handleCreate = async () => {
+    if (!newData.kode_rute || !newData.nama_rute || !newData.asal || !newData.tujuan || !newData.jarak_km) {
+      showNotif("Semua field harus diisi", false);
+      return;
+    }
+    const dataToSend = { ...newData, jarak_km: parseInt(newData.jarak_km, 10) };
 
-  // Konversi jarak_km menjadi integer
-  const dataToSend = {
-    ...newData,
-    jarak_km: parseInt(newData.jarak_km, 10), // Konversi ke integer
+    try {
+   
+      await createRute(dataToSend);
+      setNewData({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
+      showNotif("Data berhasil ditambahkan");
+      fetchRutes(); 
+    } catch (err) {
+      showNotif(err.response?.data?.error || "Gagal menambahkan data", false);
+    }
   };
 
-  try {
-    console.log("Data yang dikirim:", dataToSend);
-    const res = await axios.post("http://localhost:8088/api/rutes", dataToSend);
-    console.log("Respons API:", res.data);
-    setNewData({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
-    showNotif("Data berhasil ditambahkan");
-    triggerRefresh();
-  } catch (err) {
-    if (err.response) {
-      console.error("Error dari API:", err.response.data);
-      showNotif(`Gagal: ${err.response.data.message || "Terjadi kesalahan"}`, false);
-    } else {
-      console.error("Error lainnya:", err);
-      showNotif("Gagal menghubungi server", false);
-    }
-  }
-};
-
   const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:8088/api/rutes/${id}`);
-      showNotif("Data berhasil dihapus");
-      triggerRefresh();
-    } catch (err) {
-      console.error("Gagal hapus:", err);
-      showNotif("Gagal menghapus data", false);
+    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+        try {
+           
+            await deleteRute(id);
+            showNotif("Data berhasil dihapus");
+            fetchRutes(); 
+        } catch (err) {
+            showNotif(err.response?.data?.error || "Gagal menghapus data", false);
+        }
     }
   };
 
   const handleEdit = (r) => {
     setEditId(r._id);
-    setEditData({
-      kode_rute: r.kode_rute,
-      nama_rute: r.nama_rute,
-      asal: r.asal,
-      tujuan: r.tujuan,
-      jarak_km: r.jarak_km,
-    });
+    setEditData({ ...r });
   };
 
   const handleEditChange = (e) => {
     setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
-const handleUpdate = async () => {
-  if (!editData.kode_rute || !editData.nama_rute || !editData.asal || !editData.tujuan || !editData.jarak_km) {
-    showNotif("Semua field harus diisi", false);
-    return;
-  }
-
-  // Konversi jarak_km menjadi integer
-  const dataToSend = {
-    ...editData,
-    jarak_km: parseInt(editData.jarak_km, 10), // Konversi ke integer
-  };
-
-  try {
-    console.log("Data yang dikirim untuk update:", dataToSend);
-    const res = await axios.put(`http://localhost:8088/api/rutes/${editId}`, dataToSend);
-    console.log("Respons API:", res.data);
-    setEditId(null);
-    showNotif("Data berhasil diupdate");
-    triggerRefresh();
-  } catch (err) {
-    if (err.response) {
-      console.error("Error dari API:", err.response.data);
-      showNotif(`Gagal: ${err.response.data.message || "Terjadi kesalahan"}`, false);
-    } else {
-      console.error("Error lainnya:", err);
-      showNotif("Gagal menghubungi server", false);
+  const handleUpdate = async () => {
+    if (!editData.kode_rute || !editData.nama_rute || !editData.asal || !editData.tujuan || !editData.jarak_km) {
+        showNotif("Semua field harus diisi", false);
+        return;
     }
-  }
-};
+    const dataToSend = { ...editData, jarak_km: parseInt(editData.jarak_km, 10) };
+
+    try {
+      
+        await updateRute(editId, dataToSend);
+        setEditId(null);
+        showNotif("Data berhasil diupdate");
+        fetchRutes(); 
+    } catch (err) {
+        showNotif(err.response?.data?.error || "Gagal mengupdate data", false);
+    }
+  };
 
   const handleCancelEdit = () => {
     setEditId(null);

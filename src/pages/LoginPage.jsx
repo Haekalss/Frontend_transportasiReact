@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { login } from '../services/api'; 
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -13,22 +13,23 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8088/api/login', {
+      // Panggil fungsi login dari api.js
+      const responseData = await login({
         username,
         password,
       });
 
       // Simpan token dan role ke localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', response.data.role);
+      localStorage.setItem('token', responseData.token);
+      // PERBAIKAN DI SINI: hapus .data
+      localStorage.setItem('role', responseData.role); 
 
       // Arahkan berdasarkan role
-      if (response.data.role === 'admin') {
+      if (responseData.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
       }
-      window.location.reload(); // Reload untuk update state di seluruh aplikasi
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
     }
@@ -72,9 +73,9 @@ export default function LoginPage() {
         </form>
         <p className="text-sm text-center text-gray-600">
           Belum punya akun?{' '}
-          <a href="/register" className="font-semibold text-blue-600 hover:underline">
+          <Link to="/register" className="font-semibold text-blue-600 hover:underline">
             Register di sini
-          </a>
+          </Link>
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
-import { Wrench, BusFront, Map, Calendar } from "lucide-react";
+import { Wrench, BusFront, Map as MapIcon, Calendar } from "lucide-react"; 
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
 
 export default function AdminDashboard() {
   const menu = [
@@ -12,7 +12,7 @@ export default function AdminDashboard() {
       bg: "bg-green-50"
     },
     {
-      icon: <Map size={32} className="text-blue-600" />,
+      icon: <MapIcon size={32} className="text-blue-600" />,
       label: "Manajemen Rute",
       to: "/admin/rutes",
       bg: "bg-blue-50"
@@ -25,30 +25,41 @@ export default function AdminDashboard() {
     }
   ];
 
-  // Tambahkan state untuk statistik
   const [ruteCount, setRuteCount] = useState(0);
   const [kendaraanCount, setKendaraanCount] = useState(0);
   const [jadwalCount, setJadwalCount] = useState(0);
 
   useEffect(() => {
-    axios.get("http://localhost:8088/api/rutes")
-      .then(res => setRuteCount(Array.isArray(res.data) ? res.data.length : 0))
-      .catch(() => setRuteCount(0));
+    const fetchStats = async () => {
+      try {
+        // Gunakan Promise.all dengan fungsi dari api.js
+        const [ruteData, kendaraanData, jadwalData] = await Promise.all([
+          getAllRutes(),
+          getAllKendaraan(),
+          getAllJadwal(),
+        ]);
 
-    axios.get("http://localhost:8088/api/kendaraans")
-      .then(res => {
-        const arr = Array.isArray(res.data) ? res.data : [];
-        const aktif = arr.filter(k => (k.status || "").toLowerCase() === "aktif");
+        // Hitung total rute
+        setRuteCount(Array.isArray(ruteData) ? ruteData.length : 0);
+
+        // Hitung kendaraan aktif
+        const arrKendaraan = Array.isArray(kendaraanData) ? kendaraanData : [];
+        const aktif = arrKendaraan.filter(k => (k.status || "").toLowerCase() === "aktif");
         setKendaraanCount(aktif.length);
-      })
-      .catch(() => setKendaraanCount(0));
 
-    axios.get("http://localhost:8088/api/jadwals")
-      .then(res => {
-        const arr = Array.isArray(res.data) ? res.data : [];
-        setJadwalCount(arr.length);
-      })
-      .catch(() => setJadwalCount(0));
+        // Hitung total jadwal
+        setJadwalCount(Array.isArray(jadwalData) ? jadwalData.length : 0);
+
+      } catch (error) {
+        console.error("Gagal memuat data statistik admin:", error);
+        // Set semua count ke 0 jika ada error
+        setRuteCount(0);
+        setKendaraanCount(0);
+        setJadwalCount(0);
+      }
+    };
+
+    fetchStats();
   }, []);
 
   return (
@@ -70,7 +81,7 @@ export default function AdminDashboard() {
       {/* Statistik */}
       <section className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow p-5 flex flex-col items-center border-t-4 border-blue-500">
-          <div className="bg-blue-200 rounded-full p-3 mb-2"><Map size={28} className="text-blue-600" /></div>
+          <div className="bg-blue-200 rounded-full p-3 mb-2"><MapIcon size={28} className="text-blue-600" /></div>
           <div className="text-2xl font-bold text-blue-700">{ruteCount}</div>
           <div className="text-gray-600">Total Rute</div>
         </div>
