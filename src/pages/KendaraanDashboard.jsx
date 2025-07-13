@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getAllKendaraan } from "../services/api"; 
+import { getAllKendaraan } from "../services/api";
+import Swal from 'sweetalert2';
 
 import { BusFront } from "lucide-react";
 import KendaraanDashboardStats from "../components/organisms/KendaraanDashboardStats";
@@ -7,7 +8,6 @@ import KendaraanDashboardTable from "../components/organisms/KendaraanDashboardT
 
 export default function KendaraanDashboard() {
   const [kendaraan, setKendaraan] = useState([]);
-  const [error, setError] = useState(null); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,7 +23,12 @@ export default function KendaraanDashboard() {
         setKendaraan(kendaraanDenganKapasitas);
       } catch (err) {
         console.error("Gagal ambil data:", err);
-        setError("Gagal memuat data. Pastikan Anda sudah login.");
+        // Tampilkan notifikasi error menggunakan SweetAlert
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Memuat Data',
+            text: 'Tidak dapat mengambil data kendaraan. Pastikan Anda sudah login.',
+        });
       }
     };
 
@@ -37,8 +42,7 @@ export default function KendaraanDashboard() {
         <h2 className="text-2xl font-bold text-green-800">Dashboard Kendaraan</h2>
       </div>
 
-      {/* Tampilkan pesan error jika ada */}
-      {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
+      {/* Elemen untuk menampilkan error sudah tidak diperlukan lagi */}
 
       <KendaraanDashboardStats kendaraan={kendaraan} />
       <KendaraanDashboardTable kendaraanList={kendaraan} />

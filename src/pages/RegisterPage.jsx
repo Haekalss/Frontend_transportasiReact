@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { register } from '../services/api'; // Sesuaikan path jika perlu
 import { useNavigate, Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (password !== passwordConfirmation) {
-      setError('Password confirmation does not match!');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Oops...',
+        text: 'Konfirmasi password tidak cocok!',
+        confirmButtonText: 'Coba Lagi'
+      });
       return;
     }
 
@@ -27,12 +29,27 @@ export default function RegisterPage() {
         password,
         password_confirmation: passwordConfirmation,
       });
-      setSuccess('Registration successful! Redirecting to login...');
-      setTimeout(() => {
+
+      // Tampilkan notifikasi sukses dan arahkan ke login
+      Swal.fire({
+        icon: 'success',
+        title: 'Registrasi Berhasil!',
+        text: 'Akun Anda berhasil dibuat. Anda akan diarahkan ke halaman login.',
+        timer: 2500,
+        showConfirmButton: false,
+        timerProgressBar: true,
+      }).then(() => {
         navigate('/login');
-      }, 2000);
+      });
+
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      // Tampilkan notifikasi error
+      Swal.fire({
+        icon: 'error',
+        title: 'Registrasi Gagal',
+        text: err.response?.data?.error || 'Terjadi kesalahan, silakan coba lagi.',
+        confirmButtonText: 'OK'
+      });
     }
   };
 
@@ -41,9 +58,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold text-center text-gray-800">Buat Akun Baru</h2>
         
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        {success && <p className="text-green-500 text-center">{success}</p>}
-
+        {/* Pesan error dan sukses sekarang ditangani oleh SweetAlert */}
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
             <label htmlFor="username" className="text-sm font-semibold text-gray-600">Username</label>

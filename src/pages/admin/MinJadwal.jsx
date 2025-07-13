@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAllJadwal, getAllRutes, createJadwal, updateJadwal, deleteJadwal } from "../../services/api";
-
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import Swal from 'sweetalert2';
 
 export default function JadwalCRUD() {
   const [jadwals, setJadwals] = useState([]);
   const [rutes, setRutes] = useState([]);
-  const [notif, setNotif] = useState(null);
   const [editId, setEditId] = useState(null);
 
   const [newData, setNewData] = useState({ tanggal: "", waktu_berangkat: "", estimasi_tiba: "", kode_rute: "" });
@@ -14,15 +13,14 @@ export default function JadwalCRUD() {
 
   const fetchAll = useCallback(async () => {
     try {
-      // GUNAKAN FUNGSI DARI api.js
       const [jadwalData, ruteData] = await Promise.all([
         getAllJadwal(),
         getAllRutes(),
       ]);
       setJadwals(jadwalData);
       setRutes(ruteData);
-    } catch {
-      showNotif("Gagal memuat data", false);
+    } catch  {
+      Swal.fire('Error!', 'Gagal memuat data.', 'error');
     }
   }, []);
 
@@ -30,42 +28,50 @@ export default function JadwalCRUD() {
     fetchAll();
   }, [fetchAll]);
 
-  const showNotif = (msg, success = true) => {
-    setNotif({ msg, success });
-    setTimeout(() => setNotif(null), 3000);
-  };
-
   const handleInput = (e) => setNewData({ ...newData, [e.target.name]: e.target.value });
   const handleEditChange = (e) => setEditData({ ...editData, [e.target.name]: e.target.value });
 
   const handleCreate = async () => {
     const { tanggal, waktu_berangkat, estimasi_tiba, kode_rute } = newData;
     if (!tanggal?.trim() || !waktu_berangkat?.trim() || !estimasi_tiba?.trim() || !kode_rute?.trim()) {
-      showNotif("Semua field wajib diisi", false);
+      Swal.fire('Peringatan', 'Semua field wajib diisi', 'warning');
       return;
     }
     try {
-      // GUNAKAN FUNGSI DARI api.js
       await createJadwal(newData);
       fetchAll();
       setNewData({ tanggal: "", waktu_berangkat: "", estimasi_tiba: "", kode_rute: "" });
-      showNotif("Data berhasil ditambahkan");
+      Swal.fire('Berhasil!', 'Data berhasil ditambahkan', 'success');
     } catch (err) {
-      showNotif(err.response?.data?.error || "Gagal menambahkan data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal menambahkan data", 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
         try {
-            // GUNAKAN FUNGSI DARI api.js
-            await deleteJadwal(id);
-            fetchAll();
-            showNotif("Data berhasil dihapus");
+          await deleteJadwal(id);
+          fetchAll();
+          Swal.fire(
+            'Dihapus!',
+            'Data jadwal telah dihapus.',
+            'success'
+          );
         } catch (err) {
-            showNotif(err.response?.data?.error || "Gagal menghapus data", false);
+          Swal.fire('Gagal!', err.response?.data?.error || "Gagal menghapus data", 'error');
         }
-    }
+      }
+    });
   };
 
   const handleEdit = (j) => {
@@ -81,17 +87,16 @@ export default function JadwalCRUD() {
   const handleUpdate = async () => {
     const { tanggal, waktu_berangkat, estimasi_tiba, kode_rute } = editData;
     if (!tanggal?.trim() || !waktu_berangkat?.trim() || !estimasi_tiba?.trim() || !kode_rute?.trim()) {
-      showNotif("Semua field wajib diisi", false);
+      Swal.fire('Peringatan', 'Semua field wajib diisi', 'warning');
       return;
     }
     try {
-      // GUNAKAN FUNGSI DARI api.js
       await updateJadwal(editId, editData);
       fetchAll();
       setEditId(null);
-      showNotif("Data berhasil diupdate");
+      Swal.fire('Berhasil!', 'Data berhasil diupdate', 'success');
     } catch (err) {
-      showNotif(err.response?.data?.error || "Gagal mengupdate data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal mengupdate data", 'error');
     }
   };
 
@@ -100,10 +105,6 @@ export default function JadwalCRUD() {
   return (
     <div className="space-y-8 px-4 sm:px-8 md:px-16 pt-8 pb-12 bg-gray-50 min-h-screen">
       <h2 className="text-2xl font-bold text-emerald-700 mb-6">Manajemen Jadwal</h2>
-
-      {notif && (
-        <div className={`p-4 rounded mb-4 ${notif.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>{notif.msg}</div>
-      )}
 
       <div className="bg-white rounded-2xl shadow p-6 space-y-5 max-w-2xl mx-auto">
         <h3 className="font-semibold text-gray-700 mb-2">Tambah Jadwal</h3>

@@ -8,8 +8,6 @@ const apiClient = axios.create({
 // --- INTERCEPTOR UNTUK REQUEST ---
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[Interceptor] Running for request to: ${config.url}`);
-
     // Cek apakah request BUKAN untuk login atau register
     const isAuthRoute = config.url.endsWith('/login') || config.url.endsWith('/register');
 
@@ -17,45 +15,53 @@ apiClient.interceptors.request.use(
     if (!isAuthRoute) {
       const token = localStorage.getItem('token');
       if (token) {
-        console.log('[Interceptor] Token DITEMUKAN. Menambahkan ke header.');
         config.headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('[Interceptor] PERINGATAN: Token TIDAK ditemukan untuk rute yang dilindungi.');
       }
-    } else {
-      console.log('[Interceptor] Rute otentikasi, token tidak ditambahkan.');
     }
     
     return config;
   },
   (error) => {
+    // Tampilkan notifikasi untuk error pada request
+    Swal.fire({
+        icon: 'error',
+        title: 'Kesalahan Jaringan',
+        text: 'Tidak dapat mengirim permintaan ke server. Periksa koneksi internet Anda.',
+    });
     return Promise.reject(error);
   }
 );
 
 // --- INTERCEPTOR UNTUK RESPONSE ---
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => response, // Jika sukses, langsung kembalikan response
   (error) => {
-    if (error.response && (error.response.status === 400 || error.response.status === 401 || error.response.status === 403)) {
-      const isAuthRoute = error.config.url.endsWith('/login') || error.config.url.endsWith('/register');
-      // Hanya jalankan logout paksa jika error BUKAN dari halaman login/register itu sendiri
-      if (!isAuthRoute) {
+    const { response, config } = error;
+    
+    // Cek jika error karena sesi/token tidak valid (401 atau 403)
+    if (response && [401, 403].includes(response.status)) {
+      const isAuthRoute = config.url.endsWith('/login') || config.url.endsWith('/register');
+      
+      // Hanya jalankan logout paksa jika error BUKAN dari halaman login/register
+      if (!isAuthRoute && window.location.pathname !== '/login') {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
 
-        if (window.location.pathname !== '/login') {
-            Swal.fire({
-              title: 'Sesi Tidak Valid',
-              text: 'Token Anda tidak valid atau sesi telah berakhir. Silakan login kembali.',
-              icon: 'error',
-              confirmButtonText: 'Login',
-            }).then(() => {
-              window.location.href = '/login'; 
-            });
-        }
+        Swal.fire({
+          title: 'Sesi Tidak Valid',
+          text: 'Sesi Anda telah berakhir atau token tidak valid. Silakan login kembali.',
+          icon: 'warning',
+          confirmButtonText: 'Login',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        }).then(() => {
+          window.location.href = '/login'; 
+        });
       }
     }
+    
+    // Untuk error lainnya, biarkan ditangani oleh pemanggil fungsi (try-catch di komponen)
+    // Ini memberikan fleksibilitas untuk menampilkan pesan error yang lebih spesifik di setiap halaman.
     return Promise.reject(error);
   }
 );

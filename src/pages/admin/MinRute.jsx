@@ -1,35 +1,32 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAllRutes, createRute, updateRute, deleteRute } from "../../services/api";
-import { Plus, Pencil, Trash2, Save, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import Swal from 'sweetalert2';
 
 export default function RuteCRUD() {
   const [rutes, setRutes] = useState([]);
   const [newData, setNewData] = useState({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
-  const [notif, setNotif] = useState(null);
 
   const fetchRutes = useCallback(async () => {
     try {
-      // Gunakan fungsi dari api.js
       const data = await getAllRutes();
       setRutes(data);
     } catch (err) {
       console.error("Gagal ambil data rute:", err);
-      showNotif("Gagal memuat data rute. Pastikan Anda login sebagai admin.", false);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Gagal memuat data rute. Pastikan Anda login sebagai admin.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
-  }, []); 
+  }, []);
 
-  // Gunakan fetchRutes sebagai dependensi
   useEffect(() => {
     fetchRutes();
   }, [fetchRutes]);
-
-  const showNotif = (msg, success = true) => {
-    setNotif({ msg, success });
-    setTimeout(() => setNotif(null), 3000);
-  };
-
 
   const handleInput = (e) => {
     setNewData({ ...newData, [e.target.name]: e.target.value });
@@ -37,33 +34,46 @@ export default function RuteCRUD() {
 
   const handleCreate = async () => {
     if (!newData.kode_rute || !newData.nama_rute || !newData.asal || !newData.tujuan || !newData.jarak_km) {
-      showNotif("Semua field harus diisi", false);
+      Swal.fire('Peringatan', 'Semua field harus diisi', 'warning');
       return;
     }
     const dataToSend = { ...newData, jarak_km: parseInt(newData.jarak_km, 10) };
 
     try {
-   
       await createRute(dataToSend);
       setNewData({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
-      showNotif("Data berhasil ditambahkan");
-      fetchRutes(); 
+      Swal.fire('Berhasil!', 'Data berhasil ditambahkan', 'success');
+      fetchRutes();
     } catch (err) {
-      showNotif(err.response?.data?.error || "Gagal menambahkan data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal menambahkan data", 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
         try {
-           
-            await deleteRute(id);
-            showNotif("Data berhasil dihapus");
-            fetchRutes(); 
+          await deleteRute(id);
+          Swal.fire(
+            'Dihapus!',
+            'Data berhasil dihapus.',
+            'success'
+          );
+          fetchRutes();
         } catch (err) {
-            showNotif(err.response?.data?.error || "Gagal menghapus data", false);
+          Swal.fire('Gagal!', err.response?.data?.error || "Gagal menghapus data", 'error');
         }
-    }
+      }
+    });
   };
 
   const handleEdit = (r) => {
@@ -77,19 +87,18 @@ export default function RuteCRUD() {
 
   const handleUpdate = async () => {
     if (!editData.kode_rute || !editData.nama_rute || !editData.asal || !editData.tujuan || !editData.jarak_km) {
-        showNotif("Semua field harus diisi", false);
-        return;
+      Swal.fire('Peringatan', 'Semua field harus diisi', 'warning');
+      return;
     }
     const dataToSend = { ...editData, jarak_km: parseInt(editData.jarak_km, 10) };
 
     try {
-      
-        await updateRute(editId, dataToSend);
-        setEditId(null);
-        showNotif("Data berhasil diupdate");
-        fetchRutes(); 
+      await updateRute(editId, dataToSend);
+      setEditId(null);
+      Swal.fire('Berhasil!', 'Data berhasil diupdate', 'success');
+      fetchRutes();
     } catch (err) {
-        showNotif(err.response?.data?.error || "Gagal mengupdate data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal mengupdate data", 'error');
     }
   };
 
@@ -100,13 +109,6 @@ export default function RuteCRUD() {
   return (
     <div className="space-y-8 px-4 sm:px-8 md:px-16 pt-8 pb-12 bg-gray-50 min-h-screen">
       <h2 className="text-2xl font-bold text-blue-800 mb-6">Manajemen Rute</h2>
-
-      {notif && (
-        <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg mb-4 ${notif.success ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"}`}>
-          {notif.success ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          <span>{notif.msg}</span>
-        </div>
-      )}
 
       <div className="bg-white rounded-2xl shadow p-6 space-y-5 max-w-3xl mx-auto">
         <h3 className="font-semibold text-gray-700 mb-2">Tambah Rute</h3>

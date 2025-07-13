@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getAllJadwal, getAllRutes, getAllKendaraan } from "../services/api"; // Sesuaikan path jika perlu
+import { getAllJadwal, getAllRutes, getAllKendaraan } from "../services/api";
+import Swal from 'sweetalert2';
 
 import { Calendar } from "lucide-react";
 import JadwalDashboardStats from "../components/organisms/JadwalDashboardStats";
@@ -10,7 +11,6 @@ export default function JadwalDashboard() {
   const [rutes, setRutes] = useState([]);
   const [ruteInput, setRuteInput] = useState("");
   const [filteredJadwals, setFilteredJadwals] = useState([]);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,34 +37,49 @@ export default function JadwalDashboard() {
           ...j,
           nama_rute: ruteMap[j.rute_id] || "-",
           jenis_kendaraan: kendaraanMap[j.kendaraan_id] || "-",
-          kode_rute: j.rute?.kode_rute || "-",       
-          jarak_km: j.rute?.jarak_km || "-",       
+          kode_rute: j.rute?.kode_rute || "-",
+          jarak_km: j.rute?.jarak_km || "-",
         }));
 
         setJadwals(jadwalGabung);
       } catch (err) {
         console.error("Gagal ambil data jadwal:", err);
-        setError("Gagal memuat data. Pastikan Anda sudah login.");
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Memuat Data',
+          text: 'Tidak dapat mengambil data dari server. Pastikan Anda sudah login.',
+        });
       }
     };
 
     fetchData();
   }, []);
 
-  // Handler select rute
   const handleSelectRute = (e) => {
     setRuteInput(e.target.value);
-    setFilteredJadwals([]);
+    setFilteredJadwals([]); // Kosongkan filter saat rute diubah
   };
 
-  // Handler tombol cari
   const handleCariJadwal = () => {
     if (!ruteInput) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Pilih Rute Dahulu',
+        text: 'Silakan pilih nama rute untuk memulai pencarian jadwal.',
+      });
       setFilteredJadwals([]);
       return;
     }
     const filtered = jadwals.filter(j => j.nama_rute === ruteInput);
     setFilteredJadwals(filtered);
+
+    if (filtered.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Jadwal Tidak Ditemukan',
+        text: `Tidak ada jadwal yang tersedia untuk rute "${ruteInput}".`,
+      });
+    }
   };
 
   return (
@@ -73,8 +88,6 @@ export default function JadwalDashboard() {
         <Calendar size={28} className="text-emerald-600" />
         <h2 className="text-2xl font-bold text-emerald-700">Dashboard Jadwal</h2>
       </div>
-
-      {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
 
       {/* Baris: Stats & Pencarian */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
@@ -95,7 +108,7 @@ export default function JadwalDashboard() {
             ))}
           </select>
           <button
-            className="px-4 py-2 bg-emerald-500 text-white rounded"
+            className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600"
             onClick={handleCariJadwal}
           >
             Cari Jadwal
@@ -104,7 +117,7 @@ export default function JadwalDashboard() {
       </div>
 
       {/* Table */}
-      <JadwalDashboardTable jadwalList={filteredJadwals.length > 0 ? filteredJadwals : jadwals} />
+      <JadwalDashboardTable jadwalList={filteredJadwals.length > 0 || ruteInput ? filteredJadwals : jadwals} />
     </div>
   );
 }

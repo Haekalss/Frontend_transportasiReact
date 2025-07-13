@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { login } from '../services/api'; 
+import { login } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
 
     try {
       // Panggil fungsi login dari api.js
@@ -21,8 +20,17 @@ export default function LoginPage() {
 
       // Simpan token dan role ke localStorage
       localStorage.setItem('token', responseData.token);
-      // PERBAIKAN DI SINI: hapus .data
-      localStorage.setItem('role', responseData.role); 
+      localStorage.setItem('role', responseData.role);
+
+      // Tampilkan notifikasi sukses sebelum navigasi
+      await Swal.fire({
+        icon: 'success',
+        title: 'Login Berhasil!',
+        text: `Selamat datang kembali, ${username}!`,
+        timer: 1500,
+        showConfirmButton: false,
+        timerProgressBar: true,
+      });
 
       // Arahkan berdasarkan role
       if (responseData.role === 'admin') {
@@ -31,7 +39,13 @@ export default function LoginPage() {
         navigate('/');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+      // Tampilkan notifikasi error
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Gagal',
+        text: err.response?.data?.error || 'Silakan periksa kembali username dan password Anda.',
+        confirmButtonText: 'Coba Lagi'
+      });
     }
   };
 
@@ -40,8 +54,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold text-center text-gray-800">Login ke TransGo</h2>
         
-        {error && <p className="text-red-500 text-center">{error}</p>}
-
+        {/* Pesan error kini ditangani oleh SweetAlert, jadi baris ini bisa dihapus */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="username" className="text-sm font-semibold text-gray-600">Username</label>

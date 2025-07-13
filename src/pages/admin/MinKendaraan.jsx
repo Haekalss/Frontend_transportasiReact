@@ -1,33 +1,26 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAllKendaraan, createKendaraan, updateKendaraan, deleteKendaraan } from "../../services/api";
-
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import Swal from 'sweetalert2';
 
 export default function KendaraanCRUD() {
   const [kendaraan, setKendaraan] = useState([]);
   const [newData, setNewData] = useState({ nomor_polisi: "", jenis: "", status: "Aktif", kapasitas: "" });
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({ nomor_polisi: "", jenis: "", status: "Aktif", kapasitas: "" });
-  const [notif, setNotif] = useState(null);
 
   const fetchKendaraan = useCallback(async () => {
     try {
-      // GUNAKAN FUNGSI DARI api.js
       const data = await getAllKendaraan();
       setKendaraan(data);
-    } catch {
-      showNotif("Gagal memuat data kendaraan", false);
+    } catch  {
+      Swal.fire('Error!', 'Gagal memuat data kendaraan.', 'error');
     }
   }, []);
 
   useEffect(() => {
     fetchKendaraan();
   }, [fetchKendaraan]);
-
-  const showNotif = (msg, success = true) => {
-    setNotif({ msg, success });
-    setTimeout(() => setNotif(null), 3000);
-  };
 
   const handleInput = (e) => {
     setNewData({ ...newData, [e.target.name]: e.target.value });
@@ -36,37 +29,50 @@ export default function KendaraanCRUD() {
   const handleCreate = async () => {
     const { nomor_polisi, jenis, status, kapasitas: kapStr } = newData;
     if (!nomor_polisi?.trim() || !jenis?.trim() || !status?.trim() || !kapStr) {
-      showNotif("Semua field wajib diisi", false);
+      Swal.fire('Peringatan', 'Semua field wajib diisi', 'warning');
       return;
     }
     const kapasitas = parseInt(kapStr, 10);
     if (isNaN(kapasitas) || kapasitas <= 0) {
-        showNotif("Kapasitas harus berupa angka lebih dari 0", false);
-        return;
+      Swal.fire('Peringatan', 'Kapasitas harus berupa angka lebih dari 0', 'warning');
+      return;
     }
 
     try {
-      // GUNAKAN FUNGSI DARI api.js
       await createKendaraan({ nomor_polisi, jenis, status, kapasitas });
       fetchKendaraan();
       setNewData({ nomor_polisi: "", jenis: "", status: "Aktif", kapasitas: "" });
-      showNotif("Data berhasil ditambahkan");
+      Swal.fire('Berhasil!', 'Data berhasil ditambahkan', 'success');
     } catch (err) {
-      showNotif(err.response?.data?.error || "Gagal menambahkan data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal menambahkan data", 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
         try {
-            // GUNAKAN FUNGSI DARI api.js
-            await deleteKendaraan(id);
-            fetchKendaraan();
-            showNotif("Data berhasil dihapus");
+          await deleteKendaraan(id);
+          fetchKendaraan();
+          Swal.fire(
+            'Dihapus!',
+            'Data kendaraan telah dihapus.',
+            'success'
+          );
         } catch (err) {
-            showNotif(err.response?.data?.error || "Gagal menghapus data", false);
+          Swal.fire('Gagal!', err.response?.data?.error || "Gagal menghapus data", 'error');
         }
-    }
+      }
+    });
   };
 
   const handleEdit = (k) => {
@@ -81,23 +87,22 @@ export default function KendaraanCRUD() {
   const handleUpdate = async () => {
     const { nomor_polisi, jenis, status, kapasitas: kapStr } = editData;
     if (!nomor_polisi?.trim() || !jenis?.trim() || !status?.trim() || !kapStr) {
-        showNotif("Semua field wajib diisi", false);
-        return;
+      Swal.fire('Peringatan', 'Semua field wajib diisi', 'warning');
+      return;
     }
     const kapasitas = parseInt(kapStr, 10);
     if (isNaN(kapasitas) || kapasitas <= 0) {
-        showNotif("Kapasitas harus berupa angka lebih dari 0", false);
-        return;
+      Swal.fire('Peringatan', 'Kapasitas harus berupa angka lebih dari 0', 'warning');
+      return;
     }
     
     try {
-      // GUNAKAN FUNGSI DARI api.js
       await updateKendaraan(editId, { nomor_polisi, jenis, status, kapasitas });
       fetchKendaraan();
       setEditId(null);
-      showNotif("Data berhasil diupdate");
+      Swal.fire('Berhasil!', 'Data berhasil diupdate', 'success');
     } catch (err) {
-      showNotif(err.response?.data?.error || "Gagal mengupdate data", false);
+      Swal.fire('Gagal!', err.response?.data?.error || "Gagal mengupdate data", 'error');
     }
   };
 
@@ -108,12 +113,6 @@ export default function KendaraanCRUD() {
   return (
     <div className="space-y-8 px-4 sm:px-8 md:px-16 pt-8 pb-12 bg-gray-50 min-h-screen">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Manajemen Kendaraan</h2>
-
-      {notif && (
-        <div className={`p-4 rounded mb-4 ${notif.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-          {notif.msg}
-        </div>
-      )}
 
       <div className="bg-white rounded-2xl shadow p-6 space-y-5 max-w-2xl mx-auto">
         <h3 className="font-semibold text-gray-700 mb-2">Tambah Kendaraan</h3>

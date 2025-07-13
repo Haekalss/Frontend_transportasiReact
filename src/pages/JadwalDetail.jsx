@@ -1,39 +1,61 @@
-import { useParams } from "react-router-dom"
-import { useEffect, useState } from "react"
-import axios from "axios"
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getJadwalById, getRuteById, getKendaraanById } from "../services/api";
+import Swal from "sweetalert2";
 
 export default function JadwalDetail() {
-  const { id } = useParams()
-  const [jadwal, setJadwal] = useState(null)
-  const [rute, setRute] = useState(null)
-  const [kendaraan, setKendaraan] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [jadwal, setJadwal] = useState(null);
+  const [rute, setRute] = useState(null);
+  const [kendaraan, setKendaraan] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:8088/api/jadwals/${id}`)
-        setJadwal(res.data)
+        const jadwalData = await getJadwalById(id);
+        setJadwal(jadwalData);
 
-        const ruteRes = await axios.get(`http://localhost:8088/api/rutes/${res.data.rute_id}`)
-        setRute(ruteRes.data)
-
-        const kendaraanRes = await axios.get(`http://localhost:8088/api/kendaraans/${res.data.kendaraan_id}`)
-        setKendaraan(kendaraanRes.data)
-
-        setLoading(false)
-      } catch {
-        setError("Data tidak ditemukan")
-        setLoading(false)
+        // Pastikan ada rute_id dan kendaraan_id sebelum fetching
+        if (jadwalData.rute_id) {
+          const ruteData = await getRuteById(jadwalData.rute_id);
+          setRute(ruteData);
+        }
+        if (jadwalData.kendaraan_id) {
+          const kendaraanData = await getKendaraanById(jadwalData.kendaraan_id);
+          setKendaraan(kendaraanData);
+        }
+      } catch (err) {
+        console.error("Gagal mengambil detail jadwal:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Data Tidak Ditemukan',
+          text: 'Detail jadwal yang Anda cari tidak dapat ditemukan.',
+          confirmButtonText: 'Kembali ke Dashboard'
+        }).then(() => {
+          navigate('/jadwals'); // Arahkan kembali ke halaman jadwal
+        });
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [id])
+    fetchData();
+  }, [id, navigate]);
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>
-  if (error) return <div className="p-6 text-red-500">{error}</div>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  // Jika loading selesai dan tidak ada data (karena error sudah ditangani Swal)
+  if (!jadwal) {
+    return null; // Tidak menampilkan apa-apa karena pengguna akan diarahkan
+  }
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-8 pt-6">
@@ -57,7 +79,7 @@ export default function JadwalDetail() {
               <p><strong>Asal:</strong> {rute.asal}</p>
               <p><strong>Tujuan:</strong> {rute.tujuan}</p>
             </>
-          ) : <p>Rute tidak ditemukan</p>}
+          ) : <p className="text-gray-500">Informasi rute tidak tersedia.</p>}
         </div>
 
         {/* Kendaraan */}
@@ -69,9 +91,9 @@ export default function JadwalDetail() {
               <p><strong>Jenis:</strong> {kendaraan.jenis}</p>
               <p><strong>Status:</strong> {kendaraan.status}</p>
             </>
-          ) : <p>Kendaraan tidak ditemukan</p>}
+          ) : <p className="text-gray-500">Informasi kendaraan tidak tersedia.</p>}
         </div>
       </div>
     </div>
-  )
+  );
 }
