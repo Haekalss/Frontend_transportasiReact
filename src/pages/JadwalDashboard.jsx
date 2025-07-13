@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { getAllJadwal, getAllRutes, getAllKendaraan } from "../services/api";
 import Swal from 'sweetalert2';
-
-import { Calendar } from "lucide-react";
+import { Calendar, Search } from "lucide-react"; 
 import JadwalDashboardStats from "../components/organisms/JadwalDashboardStats";
 import JadwalDashboardTable from "../components/organisms/JadwalDashboardTable";
 
 export default function JadwalDashboard() {
   const [jadwals, setJadwals] = useState([]);
   const [rutes, setRutes] = useState([]);
-  const [ruteInput, setRuteInput] = useState("");
   const [filteredJadwals, setFilteredJadwals] = useState([]);
+  
+  // State untuk filter
+  const [ruteInput, setRuteInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,25 +25,29 @@ export default function JadwalDashboard() {
 
         setRutes(ruteData);
 
-        const ruteMap = {};
-        ruteData.forEach(r => {
-          ruteMap[r._id] = r.nama_rute;
-        });
+        const ruteMap = ruteData.reduce((acc, r) => {
+          acc[r._id] = r;
+          return acc;
+        }, {});
+        
+        const kendaraanMap = kendaraanData.reduce((acc, k) => {
+          acc[k._id] = k;
+          return acc;
+        }, {});
 
-        const kendaraanMap = {};
-        kendaraanData.forEach(k => {
-          kendaraanMap[k._id] = k.jenis;
+        const jadwalGabung = jadwalData.map(j => {
+            const ruteDetail = ruteMap[j.rute_id] || {};
+            return {
+                ...j,
+                nama_rute: ruteDetail.nama_rute || "-",
+                jenis_kendaraan: (kendaraanMap[j.kendaraan_id] || {}).jenis || "-",
+                kode_rute: ruteDetail.kode_rute || "-",       
+                jarak_km: ruteDetail.jarak_km || "-",
+            }
         });
-
-        const jadwalGabung = jadwalData.map(j => ({
-          ...j,
-          nama_rute: ruteMap[j.rute_id] || "-",
-          jenis_kendaraan: kendaraanMap[j.kendaraan_id] || "-",
-          kode_rute: j.rute?.kode_rute || "-",
-          jarak_km: j.rute?.jarak_km || "-",
-        }));
 
         setJadwals(jadwalGabung);
+        setFilteredJadwals(jadwalGabung); // Inisialisasi data yang ditampilkan
       } catch (err) {
         console.error("Gagal ambil data jadwal:", err);
         Swal.fire({
@@ -55,32 +61,27 @@ export default function JadwalDashboard() {
     fetchData();
   }, []);
 
-  const handleSelectRute = (e) => {
-    setRuteInput(e.target.value);
-    setFilteredJadwals([]); // Kosongkan filter saat rute diubah
-  };
 
-  const handleCariJadwal = () => {
-    if (!ruteInput) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Pilih Rute Dahulu',
-        text: 'Silakan pilih nama rute untuk memulai pencarian jadwal.',
-      });
-      setFilteredJadwals([]);
-      return;
-    }
-    const filtered = jadwals.filter(j => j.nama_rute === ruteInput);
-    setFilteredJadwals(filtered);
+  useEffect(() => {
+    let dataTersaring = [...jadwals];
 
-    if (filtered.length === 0) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Jadwal Tidak Ditemukan',
-        text: `Tidak ada jadwal yang tersedia untuk rute "${ruteInput}".`,
-      });
+    // Filter berdasarkan rute yang dipilih
+    if (ruteInput) {
+      dataTersaring = dataTersaring.filter(j => j.nama_rute === ruteInput);
     }
-  };
+
+    // Filter berdasarkan query pencarian teks
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      dataTersaring = dataTersaring.filter(j => 
+        Object.values(j).some(val =>
+          String(val).toLowerCase().includes(lowercasedQuery)
+        )
+      );
+    }
+
+    setFilteredJadwals(dataTersaring);
+  }, [ruteInput, searchQuery, jadwals]);
 
   return (
     <div className="space-y-6 px-4 sm:px-6 md:px-8 pt-6 pb-9">
@@ -89,35 +90,43 @@ export default function JadwalDashboard() {
         <h2 className="text-2xl font-bold text-emerald-700">Dashboard Jadwal</h2>
       </div>
 
-      {/* Baris: Stats & Pencarian */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
         <div className="min-w-[220px]">
           <JadwalDashboardStats jadwals={jadwals} />
         </div>
-        <div className="flex items-center gap-2">
+        
+        {/* Gabungkan filter dan pencarian */}
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+          {/* Input Pencarian Teks */}
+          <div className="relative w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Cari jadwal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border px-3 py-2 rounded-lg pl-10 w-full sm:w-56 bg-white shadow-sm"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+
+          {/* Filter Rute */}
           <select
-            className="border px-2 py-1 rounded"
+            className="border px-3 py-2 rounded-lg w-full sm:w-auto bg-white shadow-sm"
             value={ruteInput}
-            onChange={handleSelectRute}
+            onChange={(e) => setRuteInput(e.target.value)}
           >
-            <option value="">Pilih Nama Rute</option>
+            <option value="">Semua Rute</option>
             {[...new Set(rutes.map(r => r.nama_rute))].map((nama, idx) => (
               <option key={idx} value={nama}>
                 {nama}
               </option>
             ))}
           </select>
-          <button
-            className="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600"
-            onClick={handleCariJadwal}
-          >
-            Cari Jadwal
-          </button>
         </div>
       </div>
 
-      {/* Table */}
-      <JadwalDashboardTable jadwalList={filteredJadwals.length > 0 || ruteInput ? filteredJadwals : jadwals} />
+      {/* Tabel sekarang selalu menampilkan `filteredJadwals` */}
+      <JadwalDashboardTable jadwalList={filteredJadwals} />
     </div>
   );
 }

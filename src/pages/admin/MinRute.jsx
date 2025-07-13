@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { getAllRutes, createRute, updateRute, deleteRute } from "../../services/api";
-import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Save, X, Search } from "lucide-react";
 import Swal from 'sweetalert2';
 
 export default function RuteCRUD() {
   const [rutes, setRutes] = useState([]);
+  const [filteredRutes, setFilteredRutes] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newData, setNewData] = useState({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
   const [editId, setEditId] = useState(null);
   const [editData, setEditData] = useState({ kode_rute: "", nama_rute: "", asal: "", tujuan: "", jarak_km: "" });
@@ -13,6 +15,7 @@ export default function RuteCRUD() {
     try {
       const data = await getAllRutes();
       setRutes(data);
+      setFilteredRutes(data);
     } catch (err) {
       console.error("Gagal ambil data rute:", err);
       Swal.fire({
@@ -27,6 +30,18 @@ export default function RuteCRUD() {
   useEffect(() => {
     fetchRutes();
   }, [fetchRutes]);
+
+  // Hook untuk memfilter rute secara real-time berdasarkan input pencarian
+  useEffect(() => {
+    const lowercasedQuery = searchQuery.toLowerCase();
+    const filtered = rutes.filter(rute => {
+      // Mencocokkan query dengan setiap properti dalam objek rute
+      return Object.values(rute).some(val =>
+        String(val).toLowerCase().includes(lowercasedQuery)
+      );
+    });
+    setFilteredRutes(filtered);
+  }, [searchQuery, rutes]);
 
   const handleInput = (e) => {
     setNewData({ ...newData, [e.target.name]: e.target.value });
@@ -126,50 +141,67 @@ export default function RuteCRUD() {
         </div>
       </div>
 
-      <div className="overflow-x-auto border rounded-2xl shadow max-w-5xl mx-auto bg-white mt-8">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-blue-100 text-blue-800">
-            <tr>
-              <th className="px-5 py-3">Kode</th>
-              <th className="px-5 py-3">Nama</th>
-              <th className="px-5 py-3">Asal</th>
-              <th className="px-5 py-3">Tujuan</th>
-              <th className="px-5 py-3">Jarak (KM)</th>
-              <th className="px-5 py-3 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rutes.map((r) => (
-              <tr key={r._id} className="border-t hover:bg-gray-50">
-                {editId === r._id ? (
-                  <>
-                    <td className="px-5 py-2"><input name="kode_rute" value={editData.kode_rute} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
-                    <td className="px-5 py-2"><input name="nama_rute" value={editData.nama_rute} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
-                    <td className="px-5 py-2"><input name="asal" value={editData.asal} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
-                    <td className="px-5 py-2"><input name="tujuan" value={editData.tujuan} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
-                    <td className="px-5 py-2"><input name="jarak_km" type="number" value={editData.jarak_km} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
-                    <td className="px-5 py-2 text-center">
-                      <button onClick={handleUpdate} className="text-green-600 hover:underline mr-3"><Save size={16} /></button>
-                      <button onClick={handleCancelEdit} className="text-gray-500 hover:underline"><X size={16} /></button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-5 py-2">{r.kode_rute}</td>
-                    <td className="px-5 py-2">{r.nama_rute}</td>
-                    <td className="px-5 py-2">{r.asal}</td>
-                    <td className="px-5 py-2">{r.tujuan}</td>
-                    <td className="px-5 py-2">{r.jarak_km}</td>
-                    <td className="px-5 py-2 text-center">
-                      <button onClick={() => handleEdit(r)} className="text-blue-600 hover:underline mr-3"><Pencil size={16} /></button>
-                      <button onClick={() => handleDelete(r._id)} className="text-red-600 hover:underline"><Trash2 size={16} /></button>
-                    </td>
-                  </>
-                )}
+      {/* Bagian Daftar Rute dengan Pencarian */}
+      <div className="bg-white rounded-2xl shadow p-6 max-w-5xl mx-auto mt-8">
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-gray-700 text-lg">Daftar Rute</h3>
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Cari rute..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="border px-3 py-2 rounded-lg pl-10 w-64"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+        </div>
+
+        <div className="overflow-x-auto border rounded-2xl">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-blue-100 text-blue-800">
+              <tr>
+                <th className="px-5 py-3">Kode</th>
+                <th className="px-5 py-3">Nama</th>
+                <th className="px-5 py-3">Asal</th>
+                <th className="px-5 py-3">Tujuan</th>
+                <th className="px-5 py-3">Jarak (KM)</th>
+                <th className="px-5 py-3 text-center">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredRutes.map((r) => (
+                <tr key={r._id} className="border-t hover:bg-gray-50">
+                  {editId === r._id ? (
+                    <>
+                      <td className="px-5 py-2"><input name="kode_rute" value={editData.kode_rute} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                      <td className="px-5 py-2"><input name="nama_rute" value={editData.nama_rute} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                      <td className="px-5 py-2"><input name="asal" value={editData.asal} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                      <td className="px-5 py-2"><input name="tujuan" value={editData.tujuan} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                      <td className="px-5 py-2"><input name="jarak_km" type="number" value={editData.jarak_km} onChange={handleEditChange} className="border px-2 py-1 rounded w-full" /></td>
+                      <td className="px-5 py-2 text-center">
+                        <button onClick={handleUpdate} className="text-green-600 hover:underline mr-3"><Save size={16} /></button>
+                        <button onClick={handleCancelEdit} className="text-gray-500 hover:underline"><X size={16} /></button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-5 py-2">{r.kode_rute}</td>
+                      <td className="px-5 py-2">{r.nama_rute}</td>
+                      <td className="px-5 py-2">{r.asal}</td>
+                      <td className="px-5 py-2">{r.tujuan}</td>
+                      <td className="px-5 py-2">{r.jarak_km}</td>
+                      <td className="px-5 py-2 text-center">
+                        <button onClick={() => handleEdit(r)} className="text-blue-600 hover:underline mr-3"><Pencil size={16} /></button>
+                        <button onClick={() => handleDelete(r._id)} className="text-red-600 hover:underline"><Trash2 size={16} /></button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
