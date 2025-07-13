@@ -10,8 +10,23 @@ export default function RegisterPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const navigate = useNavigate();
 
+  const isEmailValid = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    if (!isEmailValid(email)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Format Email Tidak Valid',
+        text: 'Silakan masukkan alamat email yang valid.',
+        confirmButtonText: 'Mengerti'
+      });
+      return;
+    }
 
     if (password.length < 8) {
       Swal.fire({
