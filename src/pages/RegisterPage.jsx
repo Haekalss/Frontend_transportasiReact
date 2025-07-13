@@ -1,16 +1,27 @@
 import { useState } from 'react';
-import { register } from '../services/api'; // Sesuaikan path jika perlu
+import { register } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    if (password.length < 8) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Password Terlalu Pendek',
+        text: 'Password minimal harus terdiri dari 8 karakter.',
+        confirmButtonText: 'Mengerti'
+      });
+      return;
+    }
 
     if (password !== passwordConfirmation) {
       Swal.fire({
@@ -23,14 +34,13 @@ export default function RegisterPage() {
     }
 
     try {
-      // GUNAKAN FUNGSI 'register' DARI api.js
       await register({
         username,
+        email,
         password,
         password_confirmation: passwordConfirmation,
       });
 
-      // Tampilkan notifikasi sukses dan arahkan ke login
       Swal.fire({
         icon: 'success',
         title: 'Registrasi Berhasil!',
@@ -43,7 +53,6 @@ export default function RegisterPage() {
       });
 
     } catch (err) {
-      // Tampilkan notifikasi error
       Swal.fire({
         icon: 'error',
         title: 'Registrasi Gagal',
@@ -58,7 +67,6 @@ export default function RegisterPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
         <h2 className="text-3xl font-bold text-center text-gray-800">Buat Akun Baru</h2>
         
-        {/* Pesan error dan sukses sekarang ditangani oleh SweetAlert */}
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
             <label htmlFor="username" className="text-sm font-semibold text-gray-600">Username</label>
@@ -67,6 +75,17 @@ export default function RegisterPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="text-sm font-semibold text-gray-600">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
