@@ -1,6 +1,7 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { Home, Map as MapIcon, BusFront, Calendar } from "lucide-react"; 
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Home, Map as MapIcon, BusFront, Calendar, LogOut } from "lucide-react"; 
 import { useEffect, useState } from "react";
+import Swal from 'sweetalert2';
 
 import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
 
@@ -11,64 +12,83 @@ const menu = [
   { name: "Jadwal", path: "/jadwals", icon: <Calendar size={18} /> },
 ];
 
-export default function UserLayout() {
+export default function UserDashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPage = menu.find((m) => location.pathname.startsWith(m.path))?.name || "Dashboard Pengguna";
 
   const [ruteCount, setRuteCount] = useState(0);
   const [kendaraanCount, setKendaraanCount] = useState(0);
   const [jadwalCount, setJadwalCount] = useState(0);
 
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Anda yakin ingin keluar?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, keluar!',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        navigate('/login');
+      }
+    });
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Gunakan Promise.all dengan fungsi dari api.js
         const [ruteData, kendaraanData, jadwalData] = await Promise.all([
           getAllRutes(),
           getAllKendaraan(),
           getAllJadwal(),
         ]);
-
-        // Hitung total rute
         setRuteCount(Array.isArray(ruteData) ? ruteData.length : 0);
-
-        // Hitung kendaraan aktif
         const arrKendaraan = Array.isArray(kendaraanData) ? kendaraanData : [];
         const aktif = arrKendaraan.filter(k => (k.status || "").toLowerCase() === "aktif");
         setKendaraanCount(aktif.length);
-
-        // Hitung total jadwal
         setJadwalCount(Array.isArray(jadwalData) ? jadwalData.length : 0);
-
       } catch (error) {
         console.error("Gagal memuat data dashboard:", error);
-        // Set semua count ke 0 jika ada error
         setRuteCount(0);
         setKendaraanCount(0);
         setJadwalCount(0);
       }
     };
-
     fetchDashboardData();
   }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white shadow-xl p-4">
-        <h2 className="text-2xl font-bold text-blue-600 mb-6">🚍 TransGo</h2>
-        <nav className="space-y-2">
-          {menu.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-blue-50 transition ${
-                location.pathname === item.path ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700"
-              }`}
-            >
-              {item.icon} {item.name}
-            </Link>
-          ))}
-        </nav>
+      <aside className="w-64 bg-white shadow-xl p-4 flex flex-col">
+        <div>
+          <h2 className="text-2xl font-bold text-blue-600 mb-6">🚍 TransGo</h2>
+          <nav className="space-y-2">
+            {menu.map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-blue-50 transition ${
+                  location.pathname === item.path ? "bg-blue-100 text-blue-700 font-semibold" : "text-gray-700"
+                }`}
+              >
+                {item.icon} {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="mt-auto">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-2 rounded-xl text-red-700 hover:bg-red-50 transition font-semibold"
+          >
+            <LogOut size={18} /> Logout
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 p-6">
@@ -76,7 +96,6 @@ export default function UserLayout() {
           <h1 className="text-2xl font-semibold text-gray-800">{currentPage}</h1>
         </header>
         
-        {/* Tampilkan konten dashboard hanya jika di path "/" */}
         {location.pathname === "/" ? (
           <div>
             <section className="mb-8">
@@ -115,7 +134,6 @@ export default function UserLayout() {
             </section>
           </div>
         ) : (
-          // Jika bukan di path "/", tampilkan konten dari rute anak
           <Outlet />
         )}
       </main>
