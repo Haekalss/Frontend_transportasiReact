@@ -1,11 +1,10 @@
+import { useEffect, useState, useCallback } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, Map as MapIcon, BusFront, Calendar, LogOut } from "lucide-react"; 
-import { useEffect, useState } from "react";
+import { Home, Map as MapIcon, BusFront, Calendar, LogOut, Menu, X } from "lucide-react";
 import Swal from 'sweetalert2';
-
 import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
 
-const menu = [
+const menuItems = [
   { name: "Dashboard", path: "/", icon: <Home size={18} /> },
   { name: "Rute", path: "/rutes", icon: <MapIcon size={18} /> },
   { name: "Kendaraan", path: "/kendaraans", icon: <BusFront size={18} /> },
@@ -15,7 +14,11 @@ const menu = [
 export default function UserDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPage = menu.find((m) => location.pathname.startsWith(m.path))?.name || "Dashboard Pengguna";
+  
+  // State untuk sidebar responsif
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const currentPage = menuItems.find((m) => location.pathname.startsWith(m.path))?.name || "Dashboard Pengguna";
 
   const [ruteCount, setRuteCount] = useState(0);
   const [kendaraanCount, setKendaraanCount] = useState(0);
@@ -59,16 +62,43 @@ export default function UserDashboard() {
         setJadwalCount(0);
       }
     };
-    fetchDashboardData();
-  }, []);
+    if (location.pathname === "/") {
+        fetchDashboardData();
+    }
+  }, [location.pathname]);
+
+  // Efek untuk menutup sidebar saat berpindah halaman di mode mobile
+  useEffect(() => {
+    if (isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white shadow-xl p-4 flex flex-col">
-        <div>
-          <h2 className="text-2xl font-bold text-blue-600 mb-6">🚍 TransGo</h2>
+      {/* Overlay untuk latar belakang gelap saat sidebar mobile terbuka */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl p-4 flex flex-col transform transition-transform duration-300 md:relative md:translate-x-0 
+                   ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-blue-600">🚍 TransGo</h2>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-gray-500 hover:text-gray-800">
+            <X size={24} />
+          </button>
+        </div>
+        
+        <div className="flex-grow">
           <nav className="space-y-2">
-            {menu.map((item) => (
+            {menuItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
@@ -81,6 +111,7 @@ export default function UserDashboard() {
             ))}
           </nav>
         </div>
+
         <div className="mt-auto">
           <button
             onClick={handleLogout}
@@ -91,9 +122,14 @@ export default function UserDashboard() {
         </div>
       </aside>
 
+      {/* Konten Utama */}
       <main className="flex-1 p-6">
-        <header className="mb-6">
+        <header className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-800">{currentPage}</h1>
+          {/* Tombol Hamburger untuk Mobile */}
+          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
+            <Menu size={24} className="text-gray-700" />
+          </button>
         </header>
         
         {location.pathname === "/" ? (
