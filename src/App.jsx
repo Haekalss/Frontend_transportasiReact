@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ProtectedRoute, AdminRoute } from "./routes/AuthRoutes";
+
 import UserDashboard from "./pages/UserDashboard";
 import RuteDashboard from "./pages/RuteDashboard";
 import KendaraanDashboard from "./pages/KendaraanDashboard";
@@ -16,18 +18,22 @@ function App() {
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
+           {/* == RUTE PUBLIK == */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          <Route path="/" element={<UserDashboard />} />
-          <Route path="/rutes" element={<RuteDashboard />} />
-          <Route path="/kendaraans" element={<KendaraanDashboard />} />
-          <Route path="/jadwals" element={<JadwalDashboard />} />
-          <Route path="/jadwals/:id" element={<JadwalDetail />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/Kendaraans" element={<KendaraanCRUD />} />
-          <Route path="/admin/Rutes" element={<RuteCRUD />} />
-          <Route path="/admin/Jadwals" element={<JadwalCRUD />} />
+           {/* == RUTE PENGGUNA TERDAFTAR == */}
+          <Route path="/" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+          <Route path="/rutes" element={<ProtectedRoute><RuteDashboard /></ProtectedRoute>} />
+          <Route path="/kendaraans" element={<ProtectedRoute><KendaraanDashboard /></ProtectedRoute>} />
+          <Route path="/jadwals" element={<ProtectedRoute><JadwalDashboard /></ProtectedRoute>} />
+          <Route path="/jadwals/:id" element={<ProtectedRoute><JadwalDetail /></ProtectedRoute>} />
+
+          {/* == RUTE KHUSUS ADMIN == */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/Kendaraans" element={<AdminRoute><KendaraanCRUD /></AdminRoute>} />
+          <Route path="/admin/Rutes" element={<AdminRoute><RuteCRUD /></AdminRoute>} />
+          <Route path="/admin/Jadwals" element={<AdminRoute><JadwalCRUD /></AdminRoute>} />
         </Routes>
       </div>
     </Router>
