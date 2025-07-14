@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { Home, Map as MapIcon, BusFront, Calendar, LogOut, Menu, X } from "lucide-react";
 import Swal from 'sweetalert2';
-import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
+import { getAllRutes, getAllKendaraan, getAllJadwal, logout } from "../services/api";
 
 const menuItems = [
   { name: "Dashboard", path: "/", icon: <Home size={18} /> },
@@ -11,9 +11,9 @@ const menuItems = [
   { name: "Jadwal", path: "/jadwals", icon: <Calendar size={18} /> },
 ];
 
+
 export default function UserDashboard() {
   const location = useLocation();
-  const navigate = useNavigate();
   
   // State untuk sidebar responsif
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -35,9 +35,7 @@ export default function UserDashboard() {
       cancelButtonText: 'Batal'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        navigate('/login');
+        logout();
       }
     });
   };
@@ -72,7 +70,7 @@ export default function UserDashboard() {
     if (isSidebarOpen) {
       setIsSidebarOpen(false);
     }
-  }, [location.pathname]);
+  }, [location.pathname, isSidebarOpen]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">

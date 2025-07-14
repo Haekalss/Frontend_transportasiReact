@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAllRutes, getAllKendaraan, getAllJadwal } from "../services/api";
+import { getAllRutes, getAllKendaraan, getAllJadwal, logout } from "../services/api";
 
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
@@ -14,7 +14,7 @@ import {
   ArcElement,
 } from "chart.js";
 
-import { Wrench, BusFront, Map as MapIcon, Calendar } from "lucide-react";
+import { Wrench, BusFront, Map as MapIcon, Calendar, LogOut } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -121,11 +121,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 px-4 sm:px-6 md:px-8 pt-6 pb-8">
-  
-      <div className="flex items-center gap-3 mb-2">
-        <Wrench size={28} className="text-gray-700" />
-        <h2 className="text-2xl font-bold text-gray-800">Admin Panel</h2>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <Wrench size={28} className="text-gray-700" />
+          <h2 className="text-2xl font-bold text-gray-800">Admin Panel</h2>
+        </div>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+        >
+          <LogOut size={20} />
+          Logout
+        </button>
       </div>
+
       <div className="bg-gray-100 rounded-xl p-5 flex items-center gap-4 mb-4">
         <div className="text-4xl">🛠️</div>
         <div>
