@@ -2,7 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: 'https://backendtransportasi-production.up.railway.app/api',
 });
 
 // --- INTERCEPTOR UNTUK REQUEST ---
