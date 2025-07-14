@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute, AdminRoute } from "./routes/AuthRoutes";
 
+import LandingPage from "./pages/LandingPage";
 import UserDashboard from "./pages/UserDashboard";
 import RuteDashboard from "./pages/RuteDashboard";
 import KendaraanDashboard from "./pages/KendaraanDashboard";
@@ -14,16 +15,19 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
 function App() {
+  const isAuthenticated = localStorage.getItem('token');
+
   return (
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
            {/* == RUTE PUBLIK == */}
+          <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
            {/* == RUTE PENGGUNA TERDAFTAR == */}
-          <Route path="/" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path="/rutes" element={<ProtectedRoute><RuteDashboard /></ProtectedRoute>} />
           <Route path="/kendaraans" element={<ProtectedRoute><KendaraanDashboard /></ProtectedRoute>} />
           <Route path="/jadwals" element={<ProtectedRoute><JadwalDashboard /></ProtectedRoute>} />

@@ -36,7 +36,7 @@ export default function LoginPage() {
       if (responseData.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (err) {
       // Tampilkan notifikasi error

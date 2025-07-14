@@ -2,7 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8088/api',
+  baseURL: 'http://localhost:8080/api',
 });
 
 // --- INTERCEPTOR UNTUK REQUEST ---
@@ -75,6 +75,23 @@ export const login = async (credentials) => {
 export const register = async (userData) => {
   const response = await apiClient.post("/register", userData);
   return response.data;
+};
+
+export const logout = () => {
+  // Clear all authentication data
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  
+  // Clear navigation history and prevent back navigation
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, '', window.location.href);
+    window.onpopstate = function() {
+      window.history.pushState(null, '', window.location.href);
+    };
+  }
+  
+  // Redirect to login page
+  window.location.href = '/';
 };
 
 // --- RUTES ---

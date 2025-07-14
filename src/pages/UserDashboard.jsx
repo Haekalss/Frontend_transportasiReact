@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { getAllRutes, getAllKendaraan, getAllJadwal, logout } from "../services/api";
 
 const menuItems = [
-  { name: "Dashboard", path: "/", icon: <Home size={18} /> },
+  { name: "Dashboard", path: "/dashboard", icon: <Home size={18} /> },
   { name: "Rute", path: "/rutes", icon: <MapIcon size={18} /> },
   { name: "Kendaraan", path: "/kendaraans", icon: <BusFront size={18} /> },
   { name: "Jadwal", path: "/jadwals", icon: <Calendar size={18} /> },
@@ -60,7 +60,7 @@ export default function UserDashboard() {
         setJadwalCount(0);
       }
     };
-    if (location.pathname === "/") {
+    if (location.pathname === "/dashboard") {
         fetchDashboardData();
     }
   }, [location.pathname]);
@@ -130,7 +130,7 @@ export default function UserDashboard() {
           </button>
         </header>
         
-        {location.pathname === "/" ? (
+        {location.pathname === "/dashboard" ? (
           <div>
             <section className="mb-8">
               <div className="bg-blue-100 rounded-xl p-6 flex items-center gap-4">
